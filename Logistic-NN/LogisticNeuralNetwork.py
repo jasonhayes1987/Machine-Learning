@@ -1,6 +1,8 @@
+import sys
 import numpy as np
 import matplotlib.pyplot as plt
 from sklearn.utils import shuffle
+sys.path.insert(0,'C:/Users/Jason/Documents/Python/Machine-Learning/Util')
 from Util import error_rate, y_to_indicator, elu_vectorized, elu_prime_vectorized
 
 class Logistic_Regressor:
@@ -158,7 +160,7 @@ class Logistic_Regressor:
             if self.activation == 'sigmoid':
                 d.append(d[l].dot(self.weights[len(self.weights)-l-1].T) * (1 - Z[len(Z)-l-1] * Z[len(Z)-l-1]))
             
-            # rulu
+            # relu
             if self.activation == 'relu':
                 d.append(d[l].dot(self.weights[len(self.weights)-l-1].T) * (Z[len(Z)-l-1] > 0))
                 
@@ -322,6 +324,10 @@ class Logistic_Regressor:
         Prints final score (accuracy) and error rate of test data
         Displays loss/cost over epochs for both training and testing datasets  
         """
+        # reset train and test costs array to be empty
+        self.train_costs = []
+        self.test_costs = []
+        
         # set activation
         self.activation = activation
         
@@ -734,7 +740,7 @@ class Logistic_Regressor:
         self.display_cost_per_epoch(self.train_costs, self.test_costs)
             
        
-    def cross_validation(model, X, Y, K, epochs, learning_rate, activation, regularization, gradient_descent = 'full', samples_per_batch = 100, deceleration = 0.9, epsilon = 1e-08, decay = 0.999):
+    def cross_validation(self, X, Y, K, epochs, learning_rate, activation, regularization, gradient_descent = 'full', samples_per_batch = 100, deceleration = 0.9, epsilon = 1e-08, decay = 0.999):
         """
         Performs cross validation on a passed in model and prints mean score
         
@@ -772,21 +778,14 @@ class Logistic_Regressor:
             Xte = X[k*sz:(k*sz+sz),:]
             Yte = Y[k*sz:(k*sz+sz)]
 
-            model.train(Xtr, Ytr, Xte, Yte, epochs, learning_rate, activation, regularization, gradient_descent, samples_per_batch, deceleration, epsilon, decay)
-            y_hat = indicator_to_y(Yte)
-            score = model.score(Xtr, y_hat)
+            self.train(Xtr, Ytr, Xte, Yte, epochs, learning_rate, activation, regularization, gradient_descent, samples_per_batch, deceleration, epsilon, decay)
+            score = self.score(Xte, Yte)
             print(f'score: {score}')
             scores.append(score)
             print('')
             
-            print('Scores:')
-            print(scores)
-            print(f'mean score: {np.mean(scores)}, std: {np.std(scores)}')
-            print('')
-            mean_scores.append([np.mean(scores), np.std(scores)])
-
-        print('mean scores:')
-        print(mean_scores)
+        mean_score = np.average(scores)
+        print(f'mean score:{mean_score}')
         print('')
 
                 
