@@ -745,13 +745,12 @@ class Logistic_Regressor:
         Performs cross validation on a passed in model and prints mean score
         
         Input:
-        model: model object used for training
         X: feature data
         Y: target data
         K: number of cross-validation folds
         epochs: {int} number of training iterations 
         learning_rate: {float} 
-        activation: {string} {'sigmoid','relu','tanh'} activation algorithm to be used on each hidden layer node
+        activation: {string} {'sigmoid','relu','elu','tanh'} activation algorithm to be used on each hidden layer node
         regularization: {float} 
         gradient_descent: {string} {'full','stochastic','batch'} {default = 'full'} type of gradient descent used
         samples_per_batch: {int} {only if gradient_descent = 'batch'} {default = 100} number of samples to be used per batch of batch gradient descent
