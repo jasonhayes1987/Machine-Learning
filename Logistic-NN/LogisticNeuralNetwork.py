@@ -1,5 +1,6 @@
 import sys
 import numpy as np
+import pandas as pd
 import matplotlib.pyplot as plt
 from sklearn.utils import shuffle
 sys.path.insert(0,'C:/Users/Jason/Documents/Python/Machine-Learning/Util')
@@ -23,6 +24,13 @@ class Logistic_Regressor:
         self.bias_corrected_weight_cache = []
         self.bias_corrected_bias_cache = []
         self.activation = ''
+        self.learning_rate = 0
+        self.regularization = 0
+        self.momentum = 0
+        self.decay = 0
+        self.gradient_descent = ''
+        self.samples_per_batch = 0
+        self.epsilon = 0
         self.error_rate = 0
         self.final_score = 0
         self.store_metrics = store_metrics
@@ -49,6 +57,30 @@ class Logistic_Regressor:
             self.all_bias_corrected_bias_caches = []
             self.all_deltas = []
 
+    def reset_params(self):
+        self.weights= []
+        self.bias = []
+        self.weight_momentum = []
+        self.bias_momentum = []
+        self.train_costs = []
+        self.test_costs = []
+        self.weight_cache = []
+        self.bias_cache = []
+        self.bias_corrected_weight_momentums = []
+        self.bias_corrected_bias_momentums = []
+        self.bias_corrected_weight_cache = []
+        self.bias_corrected_bias_cache = []
+        self.activation = ''
+        self.learning_rate = 0
+        self.regularization = 0
+        self.momentum = 0
+        self.decay = 0
+        self.gradient_descent = ''
+        self.samples_per_batch = 0
+        self.epsilon = 0
+        self.error_rate = 0
+        self.final_score = 0
+    
     
     def forward(self, X, W, b):
         """
@@ -324,12 +356,18 @@ class Logistic_Regressor:
         Prints final score (accuracy) and error rate of test data
         Displays loss/cost over epochs for both training and testing datasets  
         """
-        # reset train and test costs array to be empty
-        self.train_costs = []
-        self.test_costs = []
+        # reset params
+        self.reset_params()
         
-        # set activation
+        # set params
         self.activation = activation
+        self.learning_rate = learning_rate
+        self.regularization = regularization
+        self.momentum = deceleration
+        self.decay = decay
+        self.gradient_descent = gradient_descent
+        self.samples_per_batch = samples_per_batch
+        self.epsilon = epsilon
         
         # turn Ytrain and Ytest categorical data sets into one hot encoded data sets
         Ttrain = y_to_indicator(Ytrain)
@@ -769,6 +807,7 @@ class Logistic_Regressor:
         
         # create array to store final score (accuracy) of each trained batch
         scores = []
+        best_costs = [np.inf]
 
         for k in range(K):
             print(f'k = {k}')
@@ -781,11 +820,15 @@ class Logistic_Regressor:
             score = self.score(Xte, Yte)
             print(f'score: {score}')
             scores.append(score)
+            if self.test_costs[-1] < best_costs[-1]:
+                best_costs = self.test_costs
             print('')
             
         mean_score = np.average(scores)
         print(f'mean score:{mean_score}')
         print('')
+        
+        return scores, best_costs
 
                 
     def display_cost_per_epoch(self, train_costs, test_costs):
@@ -800,10 +843,10 @@ class Logistic_Regressor:
         Displays graph of training and testing costs over epochs
         """
 
-        plt.plot(train_costs, label=f'{self.activation} Train')
-        plt.plot(test_costs, label=f'{self.activation} Test')
+        plt.plot(train_costs, label='Train')
+        plt.plot(test_costs, label='Test')
         plt.legend()
-        plt.title(label=f'Score:{self.final_score*100}%')
+        plt.title(label=f'{self.hidden_layers} x {self.hidden_nodes} {self.gradient_descent} {self.activation} Learning Rate:{self.learning_rate} Regularization:{self.regularization} Momentum:{self.momentum} Decay:{self.decay} Score:{self.final_score*100}%')
         plt.show()
         
     
@@ -893,3 +936,42 @@ def comparator(models, Xtrain, Ytrain, Xtest, Ytest, epochs, training_iterations
     plt.legend()
     plt.title(label='Model Comparator')
     plt.show()
+    
+def grid_search(X, Y, K, epochs, hidden_layers, hidden_nodes, learning_rates, activations, regularizations, gradient_descents, samples_per_batches, momentums, decays):
+    """
+    Takes in arrays of the hyperparameters to test using cross-validation and returns a cost per
+    epoch graph and and a pandas dataframe of each models parameters, best final cost and average score.
+    """
+    
+    best_costs = []
+    avg_scores = []
+    data = []
+    iterations = 0 # keeps track of the number of models being tested
+    for hl in hidden_layers:
+        for hn in hidden_nodes:
+            if len(hn) != hl:
+                continue
+            for lr in learning_rates:
+                for act in activations:
+                    for reg in regularizations:
+                        for grads in gradient_descents:
+                            for samples in samples_per_batches:
+                                for mu in momentums:
+                                    for dec in decays:
+                                        model = Logistic_Regressor(hl, hn)
+                                        scores, best_cost = model.cross_validation(X, Y, K, epochs, lr, act, reg, grads, samples, mu, dec)
+                                        best_costs.append(best_cost)
+                                        avg_scores.append(np.average(scores))
+                                        iterations += 1
+                                        data.append([model.hidden_layers, model.hidden_nodes, model.gradient_descent, model.activation, model.learning_rate, model.regularization, model.momentum, model.decay, avg_scores[-1], best_costs[-1][-1]])
+    
+    # print out cost over epochs graph showing each models performance
+    for i in range(iterations):
+        plt.plot(best_costs[i], label=i)
+    
+    plt.legend()
+    plt.title(label='Model Comparator')
+    plt.show()
+    
+    return pd.DataFrame(data, columns=['Hidden Layers', 'Hidden Nodes', 'Gradient Descent', 'Activation', 'Learning Rate', 'Regularization', 'Momentum', 'Decay', 'Score', 'Cost'])
+                                        
