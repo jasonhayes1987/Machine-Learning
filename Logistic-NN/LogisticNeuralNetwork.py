@@ -975,3 +975,58 @@ def grid_search(X, Y, K, epochs, hidden_layers, hidden_nodes, learning_rates, ac
     
     return pd.DataFrame(data, columns=['Hidden Layers', 'Hidden Nodes', 'Gradient Descent', 'Activation', 'Learning Rate', 'Regularization', 'Momentum', 'Decay', 'Score', 'Cost'])
                                         
+def random_search(X, Y, K, iterations, epochs, start_hidden_layers, start_hidden_nodes_per_layer, start_log_learning_rate, activations, start_log_regularization, gradient_descent, samples_per_batch, momentum, decay):
+    """
+    Searches for best hyperparameters.  Takes in starting points for number of hidden layers, hidden nodes,
+    learning rate, and regularization.  Will randomly select activation to use from passed in list 'activations'.
+    Gradient descent method, momentum, and decay rates are currently static (untested)
+    
+    Returns a sorted pandas dataframe of each models parameters, best final cost and average score.
+    """
+    # set initial hyperparameters
+    hidden_layers = start_hidden_layers
+    hidden_nodes_per_layer = start_hidden_nodes_per_layer
+    log_learning_rate = start_log_learning_rate
+    log_regularization = start_log_regularization
+    activation = np.random.choice(activations)
+    
+    # initialize best hyperparameters variables
+    best_score = 0
+    best_hidden_layers = None
+    best_hidden_nodes_per_layer = None
+    best_log_learning_rate = None
+    best_log_regularization = None
+    best_activation = None
+    
+    # initialize empty array to store model data
+    data = []
+    
+    for i in range(iterations):
+        # build hidden_nodes array from hidden_layers and start_hidden_nodes_per_layer variables
+        hidden_nodes = []
+        for hl in range(hidden_layers):
+            hidden_nodes.append(hidden_nodes_per_layer)
+        model = Logistic_Regressor(hidden_layers, hidden_nodes)
+        scores, best_cost = model.cross_validation(X, Y, K, epochs, 10**log_learning_rate, activation, 10**log_regularization, gradient_descent, samples_per_batch, momentum, decay)
+        avg_score = np.average(scores)
+        data.append([model.hidden_layers, model.hidden_nodes, model.gradient_descent, model.activation, model.learning_rate, model.regularization, model.momentum, model.decay, avg_score, best_cost[-1]])
+        
+        # set current average score to best score if current is better than best
+        if avg_score > best_score:
+            best_score = avg_score
+            best_hidden_layers = hidden_layers
+            best_hidden_nodes_per_layer = hidden_nodes_per_layer
+            best_log_learning_rate = log_learning_rate
+            best_log_regularization = log_regularization
+            best_activation = activation
+            
+        # select new hyperparameters
+        hidden_layers = best_hidden_layers + np.random.randint(-1,2) # +1/-1, or stay same
+        hidden_layers = max(1, hidden_layers) # if variable dips below 1, set to 1
+        hidden_nodes_per_layer = best_hidden_nodes_per_layer + np.random.randint(-1,2)*10 # +10/-10 or stay same
+        hidden_nodes_per_layer = max(10,hidden_nodes_per_layer) # if variable dips below 10, set to 10
+        log_learning_rate = best_log_learning_rate + np.random.randint(-1,2)
+        log_regularization = best_log_regularization + np.random.randint(-1,2)
+        activation = np.random.choice(activations)
+        
+    return pd.DataFrame(data, columns=['Hidden Layers', 'Hidden Nodes', 'Gradient Descent', 'Activation', 'Learning Rate', 'Regularization', 'Momentum', 'Decay', 'Score', 'Cost'])
